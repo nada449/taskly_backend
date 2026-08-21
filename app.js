@@ -9,6 +9,8 @@ const http = require('http'); //Importation du module HTTP pour créer un serveu
 
 require('dotenv').config(); //Importation du module dotenv pour charger les variables d'environnement depuis un fichier .env
 
+const {connectToMongoDB} = require('./config/mongo.connection'); //Importation de la fonction connectToMongoDB depuis le fichier config/mongo.connection.js
+
 //Importation des routes
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -49,5 +51,6 @@ const server = http.createServer(app);
 
 //Démarrage du serveur sur le port 5000
 server.listen(process.env.port , () => {
-  console.log('Serveur démarré sur le port 5000');
+  connectToMongoDB(); //Appel de la fonction connectToMongoDB pour se connecter à la base de données MongoDB
+  console.log(`Serveur démarré sur le port ${process.env.port}`);
 }); 
