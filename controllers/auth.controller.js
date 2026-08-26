@@ -1,6 +1,9 @@
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
 const Workspace = require('../models/workspace.model');
 const Membership = require('../models/membership.model');
+
 
 module.exports.createWorkspace = async (req, res) => {
     try {
@@ -10,7 +13,8 @@ module.exports.createWorkspace = async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: 'Email already in use' });
         }
-        const newUser = await User.create({ name, email, phone, password });
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = await User.create({ name, email, phone, password: hashedPassword });
         const newWorkspace = await Workspace.create({ 
             name: workspaceName,
             createdBy: newUser._id 
@@ -32,6 +36,26 @@ module.exports.createWorkspace = async (req, res) => {
     }
 
 }
+module.exports.login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+        const token = jwt.sign(
+            { userId: user._id },
+             process.env.jwt_secret,
+             { expiresIn: '7d' });
+        res.status(200).json({ message: 'Login successful', token, user });
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+};
 module.exports.getWorkspace = async (req, res) => {
     try {
         const { workspaceId } = req.params;

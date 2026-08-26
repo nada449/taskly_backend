@@ -1,3 +1,4 @@
+const bcrypt = require('bcrypt');
 const Invite = require('../models/invite.model');
 const Membership = require('../models/membership.model');
 const User = require('../models/user.model');
@@ -31,10 +32,11 @@ module.exports.acceptInvite = async (req, res) => {
     if (!invite) {
       return res.status(404).json({ message: 'Invalid or already used invite' });
     }
-
+    
+    const hashedPassword = await bcrypt.hash(password, 10);
     let user = await User.findOne({ email: invite.email });
     if (!user) {
-      user = await User.create({ name, email: invite.email, password, phone });
+      user = await User.create({ name, email: invite.email, password: hashedPassword, phone });
     }
 
     const membership = await Membership.create({
