@@ -13,8 +13,10 @@ module.exports.createProject = async (req, res) => {
     await ProjectAssignment.create({ user: managerId, project: newProject._id, role: 'manager' });
 
     // assign each member (memberIds is expected to be an array of user IDs)
-    for (const memberId of memberIds) {
-      await ProjectAssignment.create({ user: memberId, project: newProject._id, role: 'member' });
+    if (Array.isArray(memberIds)) {
+      for (const memberId of memberIds) {
+        await ProjectAssignment.create({ user: memberId, project: newProject._id, role: 'member' });
+      }
     }
 
     res.status(201).json({ message: 'Project created', project: newProject });
@@ -31,6 +33,14 @@ module.exports.getProjectById = async (req, res) => {
     const assignments = await ProjectAssignment.find({ project: project._id }).populate('user', 'name email');
 
     res.status(200).json({ project, team: assignments });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+module.exports.getAllProjectsByWorkspace = async (req, res) => {
+  try {
+    const projects = await Project.find({ workspace: req.params.workspaceId });
+    res.status(200).json({ projects });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
