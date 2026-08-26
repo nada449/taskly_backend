@@ -12,8 +12,10 @@ require('dotenv').config(); //Importation du module dotenv pour charger les vari
 const {connectToMongoDB} = require('./config/mongo.connection'); //Importation de la fonction connectToMongoDB depuis le fichier config/mongo.connection.js
 
 //Importation des routes
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+var authRouter = require('./routes/auth');
+var inviteRouter = require('./routes/invite');
+var taskRouter = require('./routes/task');
+var projectRouter = require('./routes/project');
  
 //Creation d'application express 
 var app = express();
@@ -27,8 +29,12 @@ app.use(express.static(path.join(__dirname, 'public')));//Middleware pour servir
 
 
 //Définition des routes
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/invite', inviteRouter);
+app.use('/api/task', taskRouter);
+app.use('/api/project', projectRouter);
+
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
