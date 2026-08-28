@@ -27,12 +27,21 @@ module.exports.createProject = async (req, res) => {
 
 module.exports.getProjectById = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id);
+    const project = await Project.findById(req.params.id).populate('createdBy', 'name email');
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
     const assignments = await ProjectAssignment.find({ project: project._id }).populate('user', 'name email');
 
     res.status(200).json({ project, team: assignments });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+module.exports.getMyProjects = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const assignments = await ProjectAssignment.find({ user: userId }).populate('project', 'name priority deadline');
+    res.status(200).json({ assignments });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
