@@ -18,7 +18,7 @@ module.exports.createTask = async (req, res) => {
 module.exports.getMyTasks = async (req, res) => {
   try {
     const { userId } = req.params; // TODO: get from req.user once JWT exists
-    const tasks = await Task.find({ assignedTo: userId });
+    const tasks = await Task.find({ assignedTo: userId }).populate;
     res.status(200).json({ tasks });
   } catch (error) {
     res.status(500).json({ message: error.message });
