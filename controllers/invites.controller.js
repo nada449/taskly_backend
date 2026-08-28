@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const Invite = require('../models/invite.model');
 const Membership = require('../models/membership.model');
 const User = require('../models/user.model');

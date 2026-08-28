@@ -4,7 +4,14 @@
   "private": true,
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "seed:users": "node scripts/seed-users.js",
+    "seed:workspaces": "node scripts/seed-workspaces.js",
+    "seed:memberships": "node scripts/seed-memberships.js",
+    "seed:invites": "node scripts/seed-invites.js",
+    "seed:projects": "node scripts/seed-projects.js",
+    "seed:project-assignments": "node scripts/seed-project-assignments.js",
+    "seed:tasks": "node scripts/seed-tasks.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
