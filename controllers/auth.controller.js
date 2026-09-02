@@ -56,6 +56,15 @@ module.exports.login = async (req, res) => {
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
+module.exports.logout = async (req, res) => {
+    try {
+        // Invalidate the token on the client side by removing it from local storage or cookies
+        //clearCookie('token');
+        res.status(200).json({ message: 'Logout successful' });
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error', error: error.message });
+    }   
+};
 module.exports.getWorkspace = async (req, res) => {
     try {
         const { workspaceId } = req.params;

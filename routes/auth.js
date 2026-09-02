@@ -7,6 +7,7 @@ router.post('/create', authController.createWorkspace);
 router.get('/:workspaceId', authController.getWorkspace);
 router.get('/', authController.getAllWorkspaces);
 router.post('/login', authController.login);
+router.post('/logout', authController.logout);
 
 
 

@@ -16,7 +16,9 @@ var authRouter = require('./routes/auth');
 var inviteRouter = require('./routes/invite');
 var taskRouter = require('./routes/task');
 var projectRouter = require('./routes/project');
- 
+var chatRouter = require('./routes/chat');
+var aiAssistantRouter = require('./routes/aiAssistant');
+var dashboardRouter = require('./routes/dashboard');
 //Creation d'application express 
 var app = express();
 
@@ -33,7 +35,10 @@ app.use('/api/auth', authRouter);
 app.use('/api/invite', inviteRouter);
 app.use('/api/task', taskRouter);
 app.use('/api/project', projectRouter);
-
+app.use('/api/chat', chatRouter);
+app.use('/api/ai-assistant', aiAssistantRouter);
+app.use('/api/dashboard', dashboardRouter);
+app.use('/api/notifications', require('./routes/notif')); 
 
 
 // catch 404 and forward to error handler
