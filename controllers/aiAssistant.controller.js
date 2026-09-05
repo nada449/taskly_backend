@@ -5,7 +5,7 @@ const Membership = require('../models/membership.model');
 const Project = require('../models/project.model');
 const Task = require('../models/task.model');
 
-// --- Security check, reused everywhere — same principle as chat's verifyProjectAccess ---
+//Security check, reused everywhere — same principle as chat's verifyProjectAccess ---
 async function verifyScopeAccess(userId, scope) {
   if (scope.type === 'project') {
     const assignment = await ProjectAssignment.findOne({ user: userId, project: scope.projectId });
@@ -15,7 +15,7 @@ async function verifyScopeAccess(userId, scope) {
     const membership = await Membership.findOne({ user: userId, workspace: scope.workspaceId, role: 'admin' });
     return !!membership;
   }
-  return true; // 'general' scope is always allowed — it's naturally self-scoped
+  return true; // 'general' scope always allowed — self-scoped
 }
 
 // --- Build the data context to feed the AI, based on scope ---
@@ -37,25 +37,37 @@ async function buildContext(userId, scope) {
   return 'My tasks:\n' + tasks.map(t => `- "${t.title}" — ${t.status}, due ${t.dueDate}`).join('\n');
 }
 
+// --- Gemini API call ---
 async function callAI(messages) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.anthropic_api_key,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({ model: 'claude-sonnet-4-5-20250929', max_tokens: 500, messages }),
-  });
+  const contents = messages.map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }],
+  }));
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${process.env.gemini_api_key}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents }),
+    }
+  );
+
   const data = await response.json();
-  return data.content?.[0]?.text || 'Sorry, I could not generate a response.';
+
+  if (data.error) {
+    console.error('Gemini API error:', data.error);
+    return 'Sorry, the assistant is unavailable right now.';
+  }
+
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not generate a response.';
 }
 
 // --- Start a new conversation ---
 module.exports.createConversation = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { scope } = req.body; // e.g. { type: 'project', projectId: '...' } or { type: 'general' }
+    const { scope } = req.body;
 
     const allowed = await verifyScopeAccess(userId, scope || { type: 'general' });
     if (!allowed) return res.status(403).json({ message: 'You do not have access to this scope' });
@@ -83,8 +95,6 @@ module.exports.getConversationMessages = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { conversationId } = req.params;
-
-    // ownership check: can only view YOUR OWN conversations
     const conversation = await AssistantConversation.findOne({ _id: conversationId, user: userId });
     if (!conversation) return res.status(404).json({ message: 'Conversation not found' });
 
@@ -95,7 +105,7 @@ module.exports.getConversationMessages = async (req, res) => {
   }
 };
 
-// --- Send a message in an existing conversation (the core action) ---
+// --- Send a message in an existing conversation ---
 module.exports.sendMessage = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -105,26 +115,22 @@ module.exports.sendMessage = async (req, res) => {
     const conversation = await AssistantConversation.findOne({ _id: conversationId, user: userId });
     if (!conversation) return res.status(404).json({ message: 'Conversation not found' });
 
-    // SECURITY: re-checked on every single message, not just once at conversation creation
     const allowed = await verifyScopeAccess(userId, conversation.scope);
     if (!allowed) return res.status(403).json({ message: 'You no longer have access to this scope' });
 
-    // save the user's question first
     await AssistantMessage.create({ conversation: conversationId, role: 'user', content: question });
 
-    // build fresh data context + pull prior messages for continuity
     const dataContext = await buildContext(userId, conversation.scope);
     const priorMessages = await AssistantMessage.find({ conversation: conversationId }).sort({ createdAt: 1 });
 
     const aiMessages = [
       { role: 'user', content: `You are a helpful project assistant. Use ONLY this data:\n${dataContext}` },
-      ...priorMessages.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })),
+      ...priorMessages.map(m => ({ role: m.role, content: m.content })),
     ];
 
     const answerText = await callAI(aiMessages);
     const answerMessage = await AssistantMessage.create({ conversation: conversationId, role: 'assistant', content: answerText });
 
-    // bump conversation's updatedAt so recency sorting in getMyConversations works
     conversation.updatedAt = new Date();
     await conversation.save();
 
@@ -143,7 +149,7 @@ module.exports.deleteConversation = async (req, res) => {
     const conversation = await AssistantConversation.findOneAndDelete({ _id: conversationId, user: userId });
     if (!conversation) return res.status(404).json({ message: 'Conversation not found' });
 
-    await AssistantMessage.deleteMany({ conversation: conversationId }); // clean up child messages too
+    await AssistantMessage.deleteMany({ conversation: conversationId });
     res.status(200).json({ message: 'Conversation deleted' });
   } catch (error) {
     res.status(500).json({ message: error.message });

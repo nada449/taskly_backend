@@ -19,6 +19,7 @@ var projectRouter = require('./routes/project');
 var chatRouter = require('./routes/chat');
 var aiAssistantRouter = require('./routes/aiAssistant');
 var dashboardRouter = require('./routes/dashboard');
+var notificationsRouter = require('./routes/notif');
 //Creation d'application express 
 var app = express();
 
@@ -38,7 +39,7 @@ app.use('/api/project', projectRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/ai-assistant', aiAssistantRouter);
 app.use('/api/dashboard', dashboardRouter);
-app.use('/api/notifications', require('./routes/notif')); 
+app.use('/api/notifications', notificationsRouter); 
 
 
 // catch 404 and forward to error handler
